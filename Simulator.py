@@ -20,7 +20,7 @@ class Mirror: #A mirror that reflects all radiation. It does not emit or absorb 
         pass
 
 class HeatSource:
-    def __init__(self, simulation, watts=500, temperature=300, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
+    def __init__(self, simulation, watts=500, temperature=0, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.watts = watts #In Watts (Joules per second)
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
         self.temperature = temperature #In Kelvin
@@ -78,7 +78,7 @@ class HeatSource:
             self.incoming_radiation_right = 0 #Reset incoming radiation after absorption.
 
 class Blackbody:
-    def __init__(self, simulation, temperature=300, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
+    def __init__(self, simulation, temperature=0, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
         self.temperature = temperature #In Kelvin
         self.specific_heat = specific_heat #In J/(kg*K)
@@ -137,7 +137,7 @@ class Blackbody:
             self.incoming_radiation_right = 0 #Reset incoming radiation after absorption.
 
 class TwoSidedBlackbody:
-    def __init__(self, simulation, temperature_left=300, temperature_right=300, specific_heat_left=1, specific_heat_right = 1, mass_left=0.5, mass_right=0.5, width=1, conductivity=5, area=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
+    def __init__(self, simulation, temperature_left=0, temperature_right=0, specific_heat_left=1, specific_heat_right = 1, mass_left=0.5, mass_right=0.5, width=1, conductivity=5, area=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
         self.temperature_left = temperature_left #In Kelvin
         self.area = area #In square meters. Area through which heat conducts.
@@ -273,13 +273,13 @@ class Simulation: #This is the main class. It contains all the code for running 
 
         #This setup creates the Eli Rabbet thought experiment
        
-        TwoSidedBlackbody(self, temperature_left=0, temperature_right=0)
-        TwoSidedBlackbody(self, temperature_left=0, temperature_right=0)
-        HeatSource(self, watts=400, temperature=0)
+        TwoSidedBlackbody(self)
+        TwoSidedBlackbody(self)
+        HeatSource(self, watts=400)
         Mirror(self)
-        HeatSource(self, watts=400, temperature=0)
-        Blackbody(self, temperature=0)
-        Blackbody(self, temperature=0)
+        HeatSource(self, watts=400)
+        Blackbody(self)
+        Blackbody(self)
         
         
         
