@@ -244,6 +244,7 @@ class Simulation: #This is the main class. It contains all the code for running 
             self.running = True #A variable we can use a switch to shut the Simulation off if we need to.
             self.slots = [] #A list to hold all of our blackbody objects, mirrors, and heat sources. Order of creation determines order of the ojects in space
             self.JoulesLostToSpace = 0 #A variable to keep track of how much energy has been lost to space over the course of the simulation.
+            self.prevJoulesLostToSpace = 0 #A variable to keep track of how much energy has been lost to space in the previous mili-second of the simulation.
 
 
     def draw(self): #A method Games can do. It draws everything that should be on the screen to the screen, then updates the screen.
@@ -251,8 +252,10 @@ class Simulation: #This is the main class. It contains all the code for running 
             for object in self.slots: #For each object in our list of objects...
                 object.draw() #Tell that object to draw itself.
             font = pygame.font.SysFont('arialblack', 15) #Create a font object with the specified font and size.
-            img = font.render(f"Lost to space: {self.JoulesLostToSpace:.2f} J, System:  {self.calc_energy():.2f} J, Total: {self.JoulesLostToSpace + self.calc_energy():.2f}", True, (255, 255, 255)) #Render the temperature text.
+            watts_in = sum([obj.watts for obj in self.slots if isinstance(obj, HeatSource)]) #Calculate total watts input from all heat sources.
+            img = font.render(f"Lost to space: {self.JoulesLostToSpace:.2f} J, Watts to space: {(self.JoulesLostToSpace-self.prevJoulesLostToSpace)*1000:.2f} W, System:  {self.calc_energy():.2f} J, Watts to System: {watts_in} W,  Total: {self.JoulesLostToSpace + self.calc_energy():.2f}", True, (255, 255, 255)) #Render the temperature text.
             self.screen.blit(img, (10, 300))
+            self.prevJoulesLostToSpace = self.JoulesLostToSpace #Save the current Joules lost to space for the next update cycle.
             pygame.display.update() #Update the screen to show the new drawing.
 
     def events(self): #When called, Simulation checks if any input (clicking the x button, hitting a specific key, etc) needs acting on, and acts on it.
@@ -268,6 +271,9 @@ class Simulation: #This is the main class. It contains all the code for running 
                 object.conduct() #Tell that object to conduct heat between its two sides.
         for object in self.slots: #For each object in our list of objects...
             object.absorb_radiation() #Tell that object to absorb radiation.
+            
+       
+        
 
     def create(self): #This method sets up the initial state of the simulation. It is called once at the start of the simulation.
 
@@ -297,6 +303,9 @@ class Simulation: #This is the main class. It contains all the code for running 
         for object in self.slots: #For each object in our list of objects...
             if isinstance(object, Blackbody) or isinstance(object, HeatSource): #Only blackbodies and heat sources have thermal energy.
                 total_energy += object.mass * object.specific_heat * object.temperature #E = m*c*T
+            elif isinstance(object, TwoSidedBlackbody): #TwoSidedBlackbodies have two sides with different temperatures.
+                total_energy += object.mass_left * object.specific_heat_left * object.temperature_left #E = m*c*T for the left side.
+                total_energy += object.mass_right * object.specific_heat_right * object.temperature_right #E = m*c*T for the right side.
         return total_energy 
         
     def main(self): #The heart of our simulation. This is what the computer is executing while our simulation is running.
