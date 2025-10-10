@@ -20,7 +20,7 @@ class Mirror: #A mirror that reflects all radiation. It does not emit or absorb 
         pass
 
 class HeatSource:
-    def __init__(self, simulation, watts=500, temperature=0, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
+    def __init__(self, simulation, watts=400, temperature=0, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.watts = watts #In Watts (Joules per second)
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
         self.temperature = temperature #In Kelvin
