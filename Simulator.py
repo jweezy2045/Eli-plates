@@ -3,7 +3,6 @@ import pygame
 class Mirror: #A mirror that reflects all radiation. It does not emit or absorb radiation.
     def __init__(self, simulation): #We need the position of the mirror, a reference to the simulation object.
         self.simulation = simulation #A reference to the simulation object, so the mirror can access the screen and other objects.
-        self.temperature = 0 #Mirrors do not have a temperature, but we set it to 0 for consistency.
         self.simulation.slots.append(self) #Add this mirror to the simulation's list of objects to draw and update.
 
     def draw(self): #Draw the mirror as a gray rectangle.
@@ -233,7 +232,31 @@ class TwoSidedBlackbody: #A blackbody that emits and absorbs radiation separatel
                 self.temperature_left = 0
             if self.temperature_right < 0: #Clamp temperature to 0K. Should never happen, but needed for simulation stability.
                 self.temperature_right = 0
-        
+
+class Void: #A void that does not emit or have a temperature, but can absorb radiation and remove it from the system.:
+    def __init__(self, simulation): #We need the position of the void, a reference to the simulation object.
+        self.simulation = simulation #A reference to the simulation object, so the void can access the screen and other objects.
+        self.simulation.slots.append(self) #Add this void to the simulation's list of objects to draw and update.
+        self.incoming_radiation_left = 0 #In Watts (Joules per second).
+        self.incoming_radiation_right = 0 #In Watts (Joules per second).
+
+    def draw(self): #Draw the mirror as a gray rectangle.
+        color = (255, 255, 255) #Gray color for the mirror.
+        font = pygame.font.SysFont('arialblack', 12) #Create a font object with the specified font and size.
+        wind = pygame.display.get_window_size()
+        pygame.draw.rect(self.simulation.screen, color, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1), 10, 10, 150), width=2) #Draw a rectangle at (x, y) with width and height of 10 pixels.
+        img = font.render(f"Void", True, color) #Render the temperature text.
+        self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 50, 200)) #Draw the temperature text next to the blackbody.
+    
+    def emit_radiation(self): #Mirrors do not emit radiation.
+        pass
+
+    def absorb_radiation(self): #Mirrors do not absorb radiation.
+        absorbed = self.incoming_radiation_left + self.incoming_radiation_right
+        self.simulation.JoulesLostToSpace += absorbed #All absorbed radiation is lost to space.
+        self.incoming_radiation_left = 0 #Reset incoming radiation after absorption.
+        self.incoming_radiation_right = 0 #Reset incoming radiation after absorption.=
+
 class Simulation: #This is the main class. It contains all the code for running the simulation.
 
     def __init__(self): #Constructor for the Simulation object. This code gets run whenever we make a new Simulation object, like: Simulation(). 
@@ -275,20 +298,21 @@ class Simulation: #This is the main class. It contains all the code for running 
 
     def create(self): #This method sets up the initial state of the simulation. It is called once at the start of the simulation.
 
-        #This setup creates the Eli Rabbet thought experiment pt. 1 with the single plate 
+        #This setup creates the Eli Rabbet thought experiment with the single plate setup on the left and the two plate setup on the right. 
 
         #HeatSource(self)
-
-
-        #This setup creates the Eli Rabbet thought experiment pt. 2 with both plates
-
+        #Void(self)
         #HeatSource(self)
         #Blackbody(self)
 
 
-        #This setup creates your experiment, with a mirror and 2 blackbodies. Uncomment it, and comment out the Eli Rabbet setup above to use it.
+        #This setup creates your experiment, with a mirror and 6 blackbodies. 
 
         #Mirror(self)
+        #Blackbody(self, temperature=500)
+        #Blackbody(self, temperature=500)
+        #Blackbody(self, temperature=500)
+        #Blackbody(self, temperature=500)
         #Blackbody(self, temperature=500)
         #Blackbody(self, temperature=500)
 
@@ -300,6 +324,7 @@ class Simulation: #This is the main class. It contains all the code for running 
         #Blackbody(self, temperature=500)
         #Mirror(self)
 
+      
 
         #Simulations worth running for theory reasons. pt. 2: room temperature using a mirror. Everything --hot or cold-- should go to room temperature.
 
@@ -363,7 +388,7 @@ class Simulation: #This is the main class. It contains all the code for running 
             self.events() #Check for any new events we need to act on
             self.update() #Update all of the things that move/change
             self.draw() #Redraw the screen, since things may have moved/changed.
-            self.clock.tick(60) #60FPS. This just tells python to wait. The simulation is only allowed to execute this line 60 times per second.
+            #self.clock.tick(60) #60FPS. This just tells python to wait. The simulation is only allowed to execute this line 60 times per second.
             
 if __name__ == "__main__": #This code only runs if we are running this file directly, and not importing it as a module in another file.
     pygame.init()
