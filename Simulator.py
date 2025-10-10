@@ -298,7 +298,17 @@ class Simulation: #This is the main class. It contains all the code for running 
 
     def create(self): #This method sets up the initial state of the simulation. It is called once at the start of the simulation.
 
+        #Blackbody(self) creates a blackbody object. It absorbs all radiation, and emits according to the SB law. It has a temperature, mass, and specific heat
+        #TwoSidedBlackbody(self) creates a blackbody object with two sides that can have different temperatures. It absorbs all radiation, and emits according to the SB law. It has a temperature, mass, and specific heat for each side, and conductivity between the two sides.
+        #HeatSource(self) creates a blackbody object that is supplied a constant amount of heat (in Watts), and is otherwise identical to a blackbody.
+        #Mirror(self) creates a mirror object. It reflects all radiation, and does not have a temperature, mass, or specific heat.
+        #Void(self) creates a void object. It absorbs all radiation, but does not emit any radiation, and does not have a temperature, mass, or specific heat.
+
+        #All objects are placed in a line, in the order they are created. The first object is on the left, the last object is on the right.
+        
+
         #This setup creates the Eli Rabbet thought experiment with the single plate setup on the left and the two plate setup on the right. 
+        
 
         #HeatSource(self)
         #Void(self)
