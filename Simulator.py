@@ -1,6 +1,7 @@
 import pygame
 
 class Mirror: #A mirror that reflects all radiation. It does not emit or absorb radiation.
+    
     def __init__(self, simulation): #We need the position of the mirror, a reference to the simulation object.
         self.simulation = simulation #A reference to the simulation object, so the mirror can access the screen and other objects.
         self.simulation.slots.append(self) #Add this mirror to the simulation's list of objects to draw and update.
@@ -12,6 +13,7 @@ class Mirror: #A mirror that reflects all radiation. It does not emit or absorb 
         pygame.draw.rect(self.simulation.screen, color, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1), 10, 10, 150)) #Draw a rectangle at (x, y) with width and height of 10 pixels.
         img = font.render(f"Mirror", True, color) #Render the temperature text.
         self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 50, 200)) #Draw the temperature text next to the blackbody.
+    
     def emit_radiation(self): #Mirrors do not emit radiation.
         pass
 
@@ -19,6 +21,7 @@ class Mirror: #A mirror that reflects all radiation. It does not emit or absorb 
         pass
 
 class HeatSource: #A heat source (blackbody) that is supplied a constant amount of heat (in Watts), has a temperature, and emits and absorbs radiation.
+    
     def __init__(self, simulation, watts=400, temperature=0, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.watts = watts #In Watts (Joules per second)
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
@@ -77,6 +80,7 @@ class HeatSource: #A heat source (blackbody) that is supplied a constant amount 
             self.incoming_radiation_right = 0 #Reset incoming radiation after absorption.
 
 class Blackbody: #A blackbody that emits and absorbs radiation.
+    
     def __init__(self, simulation, temperature=0, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
         self.temperature = temperature #In Kelvin
@@ -97,7 +101,6 @@ class Blackbody: #A blackbody that emits and absorbs radiation.
         self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 50, 200)) #Draw the temperature text next to the blackbody.
         img = font.render(f"{self.calc_watts():.2f}W <->", True, color) #Render the temperature text.
         self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 60, 175)) #Draw the temperature text next to the blackbody.
-
 
     def calc_watts(self): #Calculate the power emitted by the blackbody using the Stefan-Boltzmann law. We are simulating one milisecond, so Watts/1000 = Joules.
         SB_CONSTANT = 5.67e-8 # Stefan-Boltzmann constant in W/m^2K^4
@@ -126,7 +129,6 @@ class Blackbody: #A blackbody that emits and absorbs radiation.
         if self.temperature < 0: #Clamp temperature to 0K. Shold never happen, but needed for simulation stability.
             self.temperature = 0
         
-        
     def absorb_radiation(self): #Absorb incoming radiation and update temperature.
         radiation = self.incoming_radiation_left + self.incoming_radiation_right #Total incoming radiation in Watts (Joules per second).
         if radiation > 0: #If there is any incoming radiation...
@@ -136,6 +138,7 @@ class Blackbody: #A blackbody that emits and absorbs radiation.
             self.incoming_radiation_right = 0 #Reset incoming radiation after absorption.
 
 class TwoSidedBlackbody: #A blackbody that emits and absorbs radiation separately on its left and right sides, and conducts heat between its two sides.
+    
     def __init__(self, simulation, temperature_left=0, temperature_right=0, specific_heat_left=1, specific_heat_right = 1, mass_left=0.5, mass_right=0.5, width=1, conductivity=5, area=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
         self.temperature_left = temperature_left #In Kelvin
@@ -171,7 +174,6 @@ class TwoSidedBlackbody: #A blackbody that emits and absorbs radiation separatel
         self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 90, 175)) #Draw the temperature text next to the blackbody.
         img = font.render(f"{self.calc_watts("right"):.2f}W ->", True, color_right) #Render the temperature text.
         self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1), 175)) #Draw the temperature text next to the blackbody.
-
 
     def calc_watts(self, side): #Calculate the power emitted by the blackbody using the Stefan-Boltzmann law. We are simulating one milisecond, so Watts/1000 = Joules.
         if side == "left":
@@ -209,7 +211,6 @@ class TwoSidedBlackbody: #A blackbody that emits and absorbs radiation separatel
         if self.temperature_right < 0: #Clamp temperature to 0K. Shold never happen, but needed for simulation stability.
             self.temperature_right = 0  
         
-        
     def absorb_radiation(self): #Absorb incoming radiation and update temperature.
         if self.incoming_radiation_left > 0: #If there is any incoming radiation...
             delta_temp = self.incoming_radiation_left / (self.mass_left * self.specific_heat_left) # ΔT = Q / (m*c)
@@ -234,6 +235,7 @@ class TwoSidedBlackbody: #A blackbody that emits and absorbs radiation separatel
                 self.temperature_right = 0
 
 class Void: #A void that does not emit or have a temperature, but can absorb radiation and remove it from the system.:
+    
     def __init__(self, simulation): #We need the position of the void, a reference to the simulation object.
         self.simulation = simulation #A reference to the simulation object, so the void can access the screen and other objects.
         self.simulation.slots.append(self) #Add this void to the simulation's list of objects to draw and update.
@@ -267,7 +269,6 @@ class Simulation: #This is the main class. It contains all the code for running 
             self.JoulesLostToSpace = 0 #A variable to keep track of how much energy has been lost to space over the course of the simulation.
             self.prevJoulesLostToSpace = 0 #A variable to keep track of how much energy has been lost to space in the previous mili-second of the simulation.
 
-
     def draw(self): #A method Games can do. It draws everything that should be on the screen to the screen, then updates the screen.
             self.screen.fill((0, 0, 0)) #black out the screen. This removes the last drawing we made, so we start with a fresh black canvas.
             for object in self.slots: #For each object in our list of objects...
@@ -293,9 +294,6 @@ class Simulation: #This is the main class. It contains all the code for running 
         for object in self.slots: #For each object in our list of objects...
             object.absorb_radiation() #Tell that object to absorb radiation.
             
-       
-        
-
     def create(self): #This method sets up the initial state of the simulation. It is called once at the start of the simulation.
 
         #Blackbody(self) creates a blackbody object. It absorbs all radiation, and emits according to the SB law. It has a temperature, mass, and specific heat
@@ -305,7 +303,7 @@ class Simulation: #This is the main class. It contains all the code for running 
         #Void(self) creates a void object. It absorbs all radiation, but does not emit any radiation, and does not have a temperature, mass, or specific heat.
 
         #All objects are placed in a line, in the order they are created. The first object is on the left, the last object is on the right.
-        
+
 
         #This setup creates the Eli Rabbet thought experiment with the single plate setup on the left and the two plate setup on the right. 
         
@@ -377,12 +375,6 @@ class Simulation: #This is the main class. It contains all the code for running 
         Blackbody(self)
         Blackbody(self)
         
-        
-        
-
-
-        
-
     def calc_energy(self): #A method to calculate the total energy in the system. 
         total_energy = 0 #Start with zero energy.
         for object in self.slots: #For each object in our list of objects...
