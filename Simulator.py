@@ -19,7 +19,7 @@ class Mirror: #A mirror that reflects all radiation. It does not emit or absorb 
     def absorb_radiation(self): #Mirrors do not absorb radiation.
         pass
 
-class HeatSource:
+class HeatSource: #A heat source (blackbody) that is supplied a constant amount of heat (in Watts), has a temperature, and emits and absorbs radiation.
     def __init__(self, simulation, watts=400, temperature=0, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.watts = watts #In Watts (Joules per second)
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
@@ -77,7 +77,7 @@ class HeatSource:
             self.incoming_radiation_left = 0 #Reset incoming radiation after absorption.
             self.incoming_radiation_right = 0 #Reset incoming radiation after absorption.
 
-class Blackbody:
+class Blackbody: #A blackbody that emits and absorbs radiation.
     def __init__(self, simulation, temperature=0, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
         self.temperature = temperature #In Kelvin
@@ -136,7 +136,7 @@ class Blackbody:
             self.incoming_radiation_left = 0 #Reset incoming radiation after absorption.
             self.incoming_radiation_right = 0 #Reset incoming radiation after absorption.
 
-class TwoSidedBlackbody:
+class TwoSidedBlackbody: #A blackbody that emits and absorbs radiation separately on its left and right sides, and conducts heat between its two sides.
     def __init__(self, simulation, temperature_left=0, temperature_right=0, specific_heat_left=1, specific_heat_right = 1, mass_left=0.5, mass_right=0.5, width=1, conductivity=5, area=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
         self.temperature_left = temperature_left #In Kelvin
@@ -234,8 +234,6 @@ class TwoSidedBlackbody:
             if self.temperature_right < 0: #Clamp temperature to 0K. Should never happen, but needed for simulation stability.
                 self.temperature_right = 0
         
-
-
 class Simulation: #This is the main class. It contains all the code for running the simulation.
 
     def __init__(self): #Constructor for the Simulation object. This code gets run whenever we make a new Simulation object, like: Simulation(). 
@@ -277,18 +275,15 @@ class Simulation: #This is the main class. It contains all the code for running 
 
     def create(self): #This method sets up the initial state of the simulation. It is called once at the start of the simulation.
 
-        #This setup creates the Eli Rabbet thought experiment
-       
-        TwoSidedBlackbody(self)
-        TwoSidedBlackbody(self)
-        HeatSource(self, watts=400)
-        Mirror(self)
-        HeatSource(self, watts=400)
-        Blackbody(self)
-        Blackbody(self)
-        
-        
-        
+        #This setup creates the Eli Rabbet thought experiment pt. 1 with the single plate 
+
+        #HeatSource(self)
+
+
+        #This setup creates the Eli Rabbet thought experiment pt. 2 with both plates
+
+        #HeatSource(self)
+        #Blackbody(self)
 
 
         #This setup creates your experiment, with a mirror and 2 blackbodies. Uncomment it, and comment out the Eli Rabbet setup above to use it.
@@ -297,6 +292,61 @@ class Simulation: #This is the main class. It contains all the code for running 
         #Blackbody(self, temperature=500)
         #Blackbody(self, temperature=500)
 
+
+        #Simulations worth running for theory reasons. pt. 1: isolated system
+
+        #Mirror(self)
+        #Blackbody(self, temperature=500)
+        #Blackbody(self, temperature=500)
+        #Mirror(self)
+
+
+        #Simulations worth running for theory reasons. pt. 2: room temperature using a mirror. Everything --hot or cold-- should go to room temperature.
+
+        #Mirror(self)
+        #Blackbody(self, temperature=500)
+        #Blackbody(self, temperature=0)
+        #HeatSource(self)
+
+
+        #Pictet's experiment simulation setup pt 1: room temperature with no mirrors, and a thermal reservoir to keep room temp constant.
+
+        #HeatSource(self, watts=200, temperature=243.7, mass=1000000)
+        #Blackbody(self, temperature=243.7)
+        #Blackbody(self, temperature=243.7)
+        #HeatSource(self, watts=200, temperature=243.7, mass=1000000)
+
+        #Pictet's experiment simulation setup pt 2: placing a hot object in our room, next to another blackbody, which is our 'thermometer'.
+
+        #HeatSource(self, watts=200, temperature=243.7, mass=1000000)
+        #Blackbody(self, temperature=500)
+        #Blackbody(self, temperature=243.7)
+        #HeatSource(self, watts=200, temperature=243.7, mass=1000000)
+
+        #Pictet's experiment simulation setup pt 3: placing a COLD object in our room, next to another blackbody, which is our 'thermometer'.
+
+        #HeatSource(self, watts=200, temperature=243.7, mass=1000000)
+        #Blackbody(self, temperature=0)
+        #Blackbody(self, temperature=243.7)
+        #HeatSource(self, watts=200, temperature=243.7, mass=1000000)
+
+
+
+        #A side by side comparison of the two sided blackbodies and single sided blackbodies.
+       
+        TwoSidedBlackbody(self, conductivity=1.5) 
+        TwoSidedBlackbody(self, conductivity=1.5) 
+        HeatSource(self)
+        Mirror(self)
+        HeatSource(self)
+        Blackbody(self)
+        Blackbody(self)
+        
+        
+        
+
+
+        
 
     def calc_energy(self): #A method to calculate the total energy in the system. 
         total_energy = 0 #Start with zero energy.
@@ -313,10 +363,11 @@ class Simulation: #This is the main class. It contains all the code for running 
             self.events() #Check for any new events we need to act on
             self.update() #Update all of the things that move/change
             self.draw() #Redraw the screen, since things may have moved/changed.
-            #self.clock.tick(60) #60FPS. This just tells python to wait. The simulation is only allowed to execute this line 60 times per second.
+            self.clock.tick(60) #60FPS. This just tells python to wait. The simulation is only allowed to execute this line 60 times per second.
             
-pygame.init()
-simulation = Simulation() #First, we make a Simulation object, calling its constructor. We save it to a variable so can access it later.
-simulation.create() #We point to our simulation object and tell it to execute its create method. This builds the initial world and sets things up.
-simulation.main() #We point to our simulation object and tell it to execute its main method. This method contains an infinite loop and will continue to run while they are playing.
-pygame.quit() #We can only make it to here if the infinite loop from main ended, which means we want to stop the simulation, so we quit.
+if __name__ == "__main__": #This code only runs if we are running this file directly, and not importing it as a module in another file.
+    pygame.init()
+    simulation = Simulation() #First, we make a Simulation object, calling its constructor. We save it to a variable so can access it later.
+    simulation.create() #We point to our simulation object and tell it to execute its create method. This builds the initial world and sets things up.
+    simulation.main() #We point to our simulation object and tell it to execute its main method. This method contains an infinite loop and will continue to run while they are playing.
+    pygame.quit() #We can only make it to here if the infinite loop from main ended, which means we want to stop the simulation, so we quit.
