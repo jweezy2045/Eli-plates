@@ -8,7 +8,7 @@ class Mirror: #A mirror that reflects all radiation. It does not emit or absorb 
 
     def draw(self): #Draw the mirror as a gray rectangle.
         color = (200, 200, 200) #Gray color for the mirror.
-        font = pygame.font.SysFont('arialblack', 15) #Create a font object with the specified font and size.
+        font = pygame.font.SysFont('arialblack', 12) #Create a font object with the specified font and size.
         wind = pygame.display.get_window_size()
         pygame.draw.rect(self.simulation.screen, color, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1), 10, 10, 150)) #Draw a rectangle at (x, y) with width and height of 10 pixels.
         img = font.render(f"Mirror", True, color) #Render the temperature text.
@@ -31,7 +31,7 @@ class HeatSource:
         self.incoming_radiation_right = 0 #In Watts (Joules per second).
 
     def draw(self): #Draw the heat source as a rectangle. Color depends on temperature.
-        font = pygame.font.SysFont('arialblack', 15) #Create a font object with the specified font and size.
+        font = pygame.font.SysFont('arialblack', 12) #Create a font object with the specified font and size.
         color_value = min(255, max(0, int(self.temperature*.5))) #Map temperature to a color value between 0 and 255
         color = (color_value, 0, 255 - color_value) #Color shifts from blue (cold) to red (hot)
         pygame.draw.rect(self.simulation.screen, color, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1), 10, 10, 150)) #Draw a rectangle at (x, y) with width and height of 10 pixels.
@@ -88,7 +88,7 @@ class Blackbody:
         self.incoming_radiation_right = 0 #In Watts (Joules per second).
 
     def draw(self): #Draw the blackbody as a rectangle. Color depends on temperature.
-        font = pygame.font.SysFont('arialblack', 15) #Create a font object with the specified font and size.
+        font = pygame.font.SysFont('arialblack', 12) #Create a font object with the specified font and size.
         color_value = min(255, max(0, int(self.temperature*.5))) #Map temperature to a color value between 0 and 255
         color = (color_value, 0, 255 - color_value) #Color shifts from blue (cold) to red (hot)
         pygame.draw.rect(self.simulation.screen, color, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1), 10, 10, 150)) #Draw a rectangle at (x, y) with width and height of 10 pixels.
@@ -153,7 +153,7 @@ class TwoSidedBlackbody:
         self.incoming_radiation_right = 0 #In Watts (Joules per second).
 
     def draw(self): #Draw the blackbody as a rectangle. Color depends on temperature.
-        font = pygame.font.SysFont('arialblack', 15) #Create a font object with the specified font and size.
+        font = pygame.font.SysFont('arialblack', 12) #Create a font object with the specified font and size.
         color_value_left = min(255, max(0, int(self.temperature_left*.5))) #Map temperature to a color value between 0 and 255
         color_value_right = min(255, max(0, int(self.temperature_right*.5))) #Map temperature to a color value between 0 and 255
         color_left = (color_value_left, 0, 255 - color_value_left) #Color shifts from blue (cold) to red (hot)
