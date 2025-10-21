@@ -22,7 +22,7 @@ class Mirror: #A mirror that reflects all radiation. It does not emit or absorb 
 
 class HeatSource: #A heat source (blackbody) that is supplied a constant amount of heat (in Watts), has a temperature, and emits and absorbs radiation.
     
-    def __init__(self, simulation, watts=400, temperature=0, specific_heat=1, mass=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
+    def __init__(self, simulation, watts=400, temperature=0, specific_heat=1, mass=1, decay=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
         self.watts = watts #In Watts (Joules per second)
         self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
         self.temperature = temperature #In Kelvin
@@ -31,6 +31,7 @@ class HeatSource: #A heat source (blackbody) that is supplied a constant amount 
         self.simulation.slots.append(self) #Add this blackbody to the simulation's list of objects to draw and update.
         self.incoming_radiation_left = 0 #In Watts (Joules per second).
         self.incoming_radiation_right = 0 #In Watts (Joules per second).
+        self.decay = decay #decay rate for a fading heat source
 
     def draw(self): #Draw the heat source as a rectangle. Color depends on temperature.
         font = pygame.font.SysFont('arialblack', 12) #Create a font object with the specified font and size.
@@ -39,7 +40,7 @@ class HeatSource: #A heat source (blackbody) that is supplied a constant amount 
         pygame.draw.rect(self.simulation.screen, color, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1), 10, 10, 150)) #Draw a rectangle at (x, y) with width and height of 10 pixels.
         img = font.render(f"{self.temperature:.2f} K", True, color) #Render the temperature text.
         self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 50, 220)) #Draw the temperature text next to the blackbody.
-        img = font.render(f"Heatsource {self.watts}W", True, color) #Render the temperature text.
+        img = font.render(f"Heatsource {self.watts:.2f}W", True, color) #Render the temperature text.
         self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 50, 200)) #Draw the temperature text next to the blackbody.
         img = font.render(f"{self.calc_watts():.2f}W <->", True, color) #Render the temperature text.
         self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 60, 175)) #Draw the temperature text next to the blackbody.
@@ -70,6 +71,9 @@ class HeatSource: #A heat source (blackbody) that is supplied a constant amount 
         self.temperature -= delta_temp #Lose temperature due to radiation emission.s
         if self.temperature < 0: #Clamp temperature to 0K. Shold never happen, but needed for simulation stability.
             self.temperature = 0
+        self.watts *= self.decay
+        
+        
 
     def absorb_radiation(self): #Absorb incoming radiation and update temperature.
         radiation = self.incoming_radiation_left + self.incoming_radiation_right + self.watts/1000 #Add the constant heat input in Joules (Watts/1000 for miliseconds)
@@ -367,12 +371,15 @@ class Simulation: #This is the main class. It contains all the code for running 
 
         #A side by side comparison of the two sided blackbodies and single sided blackbodies.
        
-        TwoSidedBlackbody(self, conductivity=1.5) 
-        TwoSidedBlackbody(self, conductivity=1.5) 
-        HeatSource(self)
-        Mirror(self)
-        HeatSource(self)
-        Blackbody(self)
+        #TwoSidedBlackbody(self, conductivity=1.5) 
+        #TwoSidedBlackbody(self, conductivity=1.5) 
+        #HeatSource(self)
+        #Mirror(self)
+        #HeatSource(self)
+        #Blackbody(self)
+        #Blackbody(self)
+
+        HeatSource(self, decay=0.9999)
         Blackbody(self)
         
     def calc_energy(self): #A method to calculate the total energy in the system. 
