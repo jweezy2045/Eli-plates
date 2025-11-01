@@ -45,13 +45,13 @@ class HeatSource: #A heat source (blackbody) that is supplied a constant amount 
         img = font.render(f"{self.calc_watts():.2f}W <->", True, color) #Render the temperature text.
         self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 60, 175)) #Draw the temperature text next to the blackbody.
 
-    def calc_watts(self): #Calculate the power emitted by the blackbody using the Stefan-Boltzmann law. We are simulating one milisecond, so Watts/1000 = Joules.
+    def calc_watts(self): #Calculate the power emitted by the blackbody using the Stefan-Boltzmann law. We are simulating one milisecond, so Watts/timesteps = Joules.
         SB_CONSTANT = 5.67e-8 # Stefan-Boltzmann constant in W/m^2K^4
         return SB_CONSTANT * self.temperature**4 # Power emitted per unit area
     
     def emit_radiation(self): #Mirrors do not emit radiation.
         SB_CONSTANT = 5.67e-8 # Stefan-Boltzmann constant in W/m^2K^4
-        emission = SB_CONSTANT / 1000 * self.temperature**4 # Power emitted per unit area
+        emission = SB_CONSTANT / self.simulation.timeStepsPerSecon * self.temperature**4 # Power emitted per unit area
         index = self.simulation.slots.index(self) #Find the index of this object in the simulation's list of objects.
         if index - 1 < 0: #If there is no object to the left...
             self.simulation.JoulesLostToSpace += emission #...then we lose the radiation to space.
@@ -76,7 +76,7 @@ class HeatSource: #A heat source (blackbody) that is supplied a constant amount 
         
 
     def absorb_radiation(self): #Absorb incoming radiation and update temperature.
-        radiation = self.incoming_radiation_left + self.incoming_radiation_right + self.watts/1000 #Add the constant heat input in Joules (Watts/1000 for miliseconds)
+        radiation = self.incoming_radiation_left + self.incoming_radiation_right + self.watts/self.simulation.timeStepsPerSecon #Add the constant heat input in Joules (Watts/1000 for miliseconds)
         if radiation > 0: #If there is any incoming radiation...
             delta_temp = radiation / (self.mass * self.specific_heat) # ΔT = Q / (m*c)
             self.temperature += delta_temp #Increase temperature due to absorbed radiation.
@@ -112,7 +112,7 @@ class Blackbody: #A blackbody that emits and absorbs radiation.
 
     def emit_radiation(self): #Calculate the power emitted by the blackbody using the Stefan-Boltzmann law. We are simulating one milisecond, so Watts/1000 = Joules.
         SB_CONSTANT = 5.67e-8 # Stefan-Boltzmann constant in W/m^2K^4
-        emission = SB_CONSTANT / 1000 * self.temperature**4 # Power emitted per unit area
+        emission = SB_CONSTANT / self.simulation.timeStepsPerSecond * self.temperature**4 # Power emitted per unit area
         index = self.simulation.slots.index(self) #Find the index of this object in the simulation's list of objects.
         if index - 1 < 0: #If there is no object to the left...
             self.simulation.JoulesLostToSpace += emission #...then we lose the radiation to space.
@@ -189,8 +189,8 @@ class TwoSidedBlackbody: #A blackbody that emits and absorbs radiation separatel
 
     def emit_radiation(self): #Calculate the power emitted by the blackbody using the Stefan-Boltzmann law. We are simulating one milisecond, so Watts/1000 = Joules.
         SB_CONSTANT = 5.67e-8 # Stefan-Boltzmann constant in W/m^2K^4
-        emission_left = SB_CONSTANT / 1000 * self.temperature_left**4 # Power emitted per unit area
-        emission_right = SB_CONSTANT / 1000 * self.temperature_right**4 # Power emitted per unit area
+        emission_left = SB_CONSTANT / self.simulation.timeStepsPerSecond * self.temperature_left**4 # Power emitted per unit area
+        emission_right = SB_CONSTANT / self.simulation.timeStepsPerSecond * self.temperature_right**4 # Power emitted per unit area
         index = self.simulation.slots.index(self) #Find the index of this object in the simulation's list of objects.
         if index - 1 < 0: #If there is no object to the left...
             self.simulation.JoulesLostToSpace += emission_left #...then we lose the radiation to space.
@@ -228,7 +228,7 @@ class TwoSidedBlackbody: #A blackbody that emits and absorbs radiation separatel
     def conduct(self): #Conduct heat between the two sides of the blackbody.
         delta_temp = self.temperature_right - self.temperature_left #Temperature difference between the two sides.
         if delta_temp != 0: #If there is a temperature difference...
-            heat_transfer = self.conductivity * self.area * delta_temp / self.width / 1000 # Q = k*A*ΔT/d, with A=width*1m (1m depth into the screen), d=width
+            heat_transfer = self.conductivity * self.area * delta_temp / self.width / self.simulation.timeStepsPerSecond # Q = k*A*ΔT/d, with A=width*1m (1m depth into the screen), d=width
             delta_temp_left = heat_transfer / (self.mass_left * self.specific_heat_left) # ΔT = Q / (m*c)
             delta_temp_right = heat_transfer / (self.mass_right * self.specific_heat_right) # ΔT = Q / (m*c)
             self.temperature_left += delta_temp_left #Increase temperature on the left side.
@@ -272,6 +272,7 @@ class Simulation: #This is the main class. It contains all the code for running 
             self.slots = [] #A list to hold all of our blackbody objects, mirrors, and heat sources. Order of creation determines order of the ojects in space
             self.JoulesLostToSpace = 0 #A variable to keep track of how much energy has been lost to space over the course of the simulation.
             self.prevJoulesLostToSpace = 0 #A variable to keep track of how much energy has been lost to space in the previous mili-second of the simulation.
+            self.timeStepsPerSecond = 1000000 #How many steps we simulate per second of real time.
 
     def draw(self): #A method Games can do. It draws everything that should be on the screen to the screen, then updates the screen.
             self.screen.fill((0, 0, 0)) #black out the screen. This removes the last drawing we made, so we start with a fresh black canvas.
@@ -279,7 +280,7 @@ class Simulation: #This is the main class. It contains all the code for running 
                 object.draw() #Tell that object to draw itself.
             font = pygame.font.SysFont('arialblack', 15) #Create a font object with the specified font and size.
             watts_in = sum([obj.watts for obj in self.slots if isinstance(obj, HeatSource)]) #Calculate total watts input from all heat sources.
-            img = font.render(f"Lost to space: {self.JoulesLostToSpace:.2f} J, Watts to space: {(self.JoulesLostToSpace-self.prevJoulesLostToSpace)*1000:.2f} W, System:  {self.calc_energy():.2f} J, Watts to System: {watts_in} W,  Total: {self.JoulesLostToSpace + self.calc_energy():.2f}", True, (255, 255, 255)) #Render the temperature text.
+            img = font.render(f"Lost to space: {self.JoulesLostToSpace:.2f} J, Watts to space: {(self.JoulesLostToSpace-self.prevJoulesLostToSpace)*self.timeStepsPerSecond:.2f} W, System:  {self.calc_energy():.2f} J, Watts to System: {watts_in} W,  Total: {self.JoulesLostToSpace + self.calc_energy():.2f}", True, (255, 255, 255)) #Render the temperature text.
             self.screen.blit(img, (10, 300))
             self.prevJoulesLostToSpace = self.JoulesLostToSpace #Save the current Joules lost to space for the next update cycle.
             pygame.display.update() #Update the screen to show the new drawing.
@@ -379,8 +380,10 @@ class Simulation: #This is the main class. It contains all the code for running 
         #Blackbody(self)
         #Blackbody(self)
 
-        HeatSource(self, decay=0.9999)
-        Blackbody(self)
+        Mirror(self)
+        TwoSidedBlackbody(self, temperature_left=500, temperature_right=500)
+        TwoSidedBlackbody(self, temperature_left=0, temperature_right=0)
+        Mirror(self)
         
     def calc_energy(self): #A method to calculate the total energy in the system. 
         total_energy = 0 #Start with zero energy.
