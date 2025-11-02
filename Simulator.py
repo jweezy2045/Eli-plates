@@ -364,7 +364,7 @@ class Void: #A void that does not emit or have a temperature, but can absorb rad
 
 class Simulation: #This is the main class. It contains all the code for running the simulation.
 
-    def __init__(self, draw=True, logfile='Simulation-log.dat', maxSteps = 1e4): #Constructor for the Simulation object. This code gets run whenever we make a new Simulation object, like: Simulation(). 
+    def __init__(self, draw=True, logfile='Simulation-log.dat', maxSteps = 1e5): #Constructor for the Simulation object. This code gets run whenever we make a new Simulation object, like: Simulation(). 
             self.draw_enabled = draw #Whether to draw the simulation to the screen.
             self.maxSteps = maxSteps #Maximum number of steps to run the simulation for.
             self.logfile = logfile #File to log simulation data.
@@ -518,6 +518,8 @@ class Simulation: #This is the main class. It contains all the code for running 
                     f.write(f"HS[{object.temperature:.6f}], ") #Write the temperature of the object to the log file.
                 elif isinstance(object, TwoSidedBlackbody): #TwoSidedBlackbodies have two temperatures.
                     f.write(f"TSBB[{object.temperature_left:.6f}, {object.temperature_right:.6f}], ") #Write the temperatures of the object to the log file.
+                elif isinstance(object, TwoConnectedBlackbodies): #TwoSidedBlackbodies have two temperatures.
+                    f.write(f"TCBB[{object.temperature_left:.6f}, {object.temperature_right:.6f}], ") #Write the temperatures of the object to the log file.
                 elif isinstance(object, Mirror): #Mirrors do not have a temperature.
                     f.write("M, ") #Mirrors and Voids do not have a temperature.
                 elif isinstance(object, Void): #Mirrors do not have a temperature.
@@ -539,7 +541,7 @@ class Simulation: #This is the main class. It contains all the code for running 
             
 if __name__ == "__main__": #This code only runs if we are running this file directly, and not importing it as a module in another file.
     pygame.init() #Initialize all of pygame's modules. This must be done before we can use any pygame functions.
-    simulation = Simulation(logfile='Wire-log.dat') #First, we make a Simulation object, calling its constructor. We save it to a variable so can access it later.
+    simulation = Simulation(draw=False, logfile='Wire-log.dat') #First, we make a Simulation object, calling its constructor. We save it to a variable so can access it later.
     simulation.create() #We point to our simulation object and tell it to execute its create method. This builds the initial world and sets things up.
     simulation.main() #We point to our simulation object and tell it to execute its main method. This method contains an infinite loop and will continue to run while they are playing.
     if simulation.draw_enabled:
