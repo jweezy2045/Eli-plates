@@ -1,3 +1,5 @@
+import pygame   #Import the pygame library for drawing to the screen.
+
 class Mirror: #A mirror that reflects all radiation. It does not emit or absorb radiation.
     
     def __init__(self, simulation): #We need the position of the mirror, a reference to the simulation object.
@@ -49,7 +51,7 @@ class HeatSource: #A heat source (blackbody) that is supplied a constant amount 
     
     def emit_radiation(self): #Mirrors do not emit radiation.
         SB_CONSTANT = 5.67e-8 # Stefan-Boltzmann constant in W/m^2K^4
-        emission = SB_CONSTANT / self.simulation.timeStepsPerSecon * self.temperature**4 # Power emitted per unit area
+        emission = SB_CONSTANT / self.simulation.stepsPerSecond * self.temperature**4 # Power emitted per unit area
         index = self.simulation.slots.index(self) #Find the index of this object in the simulation's list of objects.
         if index - 1 < 0: #If there is no object to the left...
             self.simulation.JoulesLostToSpace += emission #...then we lose the radiation to space.
@@ -74,7 +76,7 @@ class HeatSource: #A heat source (blackbody) that is supplied a constant amount 
         
 
     def absorb_radiation(self): #Absorb incoming radiation and update temperature.
-        radiation = self.incoming_radiation_left + self.incoming_radiation_right + self.watts/self.simulation.timeStepsPerSecon #Add the constant heat input in Joules (Watts/1000 for miliseconds)
+        radiation = self.incoming_radiation_left + self.incoming_radiation_right + self.watts/self.simulation.stepsPerSecond #Add the constant heat input in Joules (Watts/1000 for miliseconds)
         if radiation > 0: #If there is any incoming radiation...
             delta_temp = radiation / (self.mass * self.specific_heat) # ΔT = Q / (m*c)
             self.temperature += delta_temp #Increase temperature due to absorbed radiation.
@@ -236,6 +238,105 @@ class TwoSidedBlackbody: #A blackbody that emits and absorbs radiation separatel
             if self.temperature_right < 0: #Clamp temperature to 0K. Should never happen, but needed for simulation stability.
                 self.temperature_right = 0
 
+class TwoConnectedBlackbodies: #Two blackbodies that are thermally connected, and also exchange radiation.
+    
+    def __init__(self, simulation, temperature_left=0, temperature_right=0, specific_heat_left=1, specific_heat_right = 1, mass_left=0.5, mass_right=0.5, width=1, conductivity=5, area=1): #We need the position of the blackbody, a reference to the simulation object. optional physical properties.
+        self.simulation = simulation #A reference to the simulation object, so the blackbody can access the screen and other objects.
+        self.temperature_left = temperature_left #In Kelvin
+        self.area = area #In square meters. Area through which heat conducts.
+        self.temperature_right = temperature_right #In Kelvin
+        self.specific_heat_left = specific_heat_left #In J/(kg*K)
+        self.specific_heat_right = specific_heat_right #In J/(kg*K)
+        self.mass_right = mass_right #In kg 
+        self.mass_left = mass_left #In kg
+        self.width = width #In meters. (defined from the center of the left side to the center of the right side)
+        self.conductivity = conductivity #In W/(m*K). How well heat conducts through the material.
+        self.simulation.slots.append(self) #Add this blackbody to the simulation's list of objects to draw and update.
+        self.incoming_radiation_left = 0 #In Watts (Joules per second).
+        self.incoming_radiation_right = 0 #In Watts (Joules per second).
+
+    def draw(self): #Draw the blackbody as a rectangle. Color depends on temperature.
+        font = pygame.font.SysFont('arialblack', 12) #Create a font object with the specified font and size.
+        color_value_left = min(255, max(0, int(self.temperature_left*.5))) #Map temperature to a color value between 0 and 255
+        color_value_right = min(255, max(0, int(self.temperature_right*.5))) #Map temperature to a color value between 0 and 255
+        color_left = (color_value_left, 0, 255 - color_value_left) #Color shifts from blue (cold) to red (hot)
+        color_right = (color_value_right, 0, 255 - color_value_right) #Color shifts from blue (cold) to red (hot)
+        pygame.draw.rect(self.simulation.screen, color_left, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1), 10, 5, 150)) #Draw a rectangle at (x, y) with width and height of 10 pixels.
+        pygame.draw.rect(self.simulation.screen, color_right, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) + 5, 10, 5, 150)) #Draw a rectangle at (x, y) with width and height of 10 pixels.
+        img = font.render(f"{self.temperature_left:.2f} K left", True, color_left) #Render the temperature text.
+        self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 50, 220)) #Draw the temperature text next to the blackbody.
+        img = font.render(f"{self.temperature_right:.2f} K right", True, color_right) #Render the temperature text.
+        self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 50, 240)) #Draw the temperature text next to the blackbody.
+        img = font.render(f"TwoSided", True, color_left) #Render the temperature text.
+        self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 85, 200)) #Draw the temperature text next to the blackbody.
+        img = font.render(f"BBody", True, color_right) #Render the temperature text.
+        self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) , 200)) #Draw the temperature text next to the blackbody.
+        img = font.render(f"{self.calc_watts("left"):.2f}W <-", True, color_left) #Render the temperature text.
+        self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1) - 90, 175)) #Draw the temperature text next to the blackbody.
+        img = font.render(f"{self.calc_watts("right"):.2f}W ->", True, color_right) #Render the temperature text.
+        self.simulation.screen.blit(img, ((self.simulation.slots.index(self) + 1)*pygame.display.get_window_size()[0]/(len(self.simulation.slots) + 1), 175)) #Draw the temperature text next to the blackbody.
+
+    def calc_watts(self, side): #Calculate the power emitted by the blackbody using the Stefan-Boltzmann law. We are simulating one milisecond, so Watts/1000 = Joules.
+        if side == "left":
+            temperature = self.temperature_left
+        else:
+            temperature = self.temperature_right
+        SB_CONSTANT = 5.67e-8 # Stefan-Boltzmann constant in W/m^2K^4
+        return SB_CONSTANT * temperature**4 # Power emitted per unit area
+
+    def emit_radiation(self): #Calculate the power emitted by the blackbody using the Stefan-Boltzmann law. We are simulating one milisecond, so Watts/1000 = Joules.
+        SB_CONSTANT = 5.67e-8 # Stefan-Boltzmann constant in W/m^2K^4
+        emission_left = SB_CONSTANT / self.simulation.stepsPerSecond * self.temperature_left**4 # Power emitted per unit area
+        emission_right = SB_CONSTANT / self.simulation.stepsPerSecond * self.temperature_right**4 # Power emitted per unit area
+        self.incoming_radiation_left += emission_right #Internal radiation between the two blackbodies.
+        self.incoming_radiation_right += emission_left #Internal radiation between the two blackbodies.
+        index = self.simulation.slots.index(self) #Find the index of this object in the simulation's list of objects.
+        if index - 1 < 0: #If there is no object to the left...
+            self.simulation.JoulesLostToSpace += emission_left #...then we lose the radiation to space.
+        else:
+            if isinstance(self.simulation.slots[index - 1], Mirror): #If the object to the left is a mirror...s
+                self.incoming_radiation_left += emission_left #Emit radiation leftward, bounces off a mirror, and is saved as rightward incoming radiation back into this object. 
+            else:
+                self.simulation.slots[index - 1].incoming_radiation_right += emission_left #Send radiation to the previous (left) object in the list.
+        if  index + 1 > len(self.simulation.slots) - 1: #If there is no object to the right...
+            self.simulation.JoulesLostToSpace += emission_right #...then we lose the radiation to space.
+        else:
+            if isinstance(self.simulation.slots[index + 1], Mirror): #If the object to the right is a mirror...
+                self.incoming_radiation_right += emission_right #Emit radiation rightward, bounces off a mirror, and is saved as leftward incoming radiation back into this object. 
+            else:
+                self.simulation.slots[index + 1].incoming_radiation_left += emission_right #Send radiation to the next (right) object in the list.
+        delta_temp_left = emission_left*2 / (self.mass_left * self.specific_heat_left) # ΔT = Q / (m*c), with 2x because we emit in two directions.
+        self.temperature_left -= delta_temp_left #Lose temperature due to radiation emission.
+        if self.temperature_left < 0: #Clamp temperature to 0K. Shold never happen, but needed for simulation stability.
+            self.temperature_left = 0
+        delta_temp_right = emission_right*2 / (self.mass_right * self.specific_heat_right) # ΔT = Q / (m*c), with 2x because we emit in two directions.
+        self.temperature_right -= delta_temp_right #Lose temperature due to radiation emission.     
+        if self.temperature_right < 0: #Clamp temperature to 0K. Shold never happen, but needed for simulation stability.
+            self.temperature_right = 0  
+        
+    def absorb_radiation(self): #Absorb incoming radiation and update temperature.
+        if self.incoming_radiation_left > 0: #If there is any incoming radiation...
+            delta_temp = self.incoming_radiation_left / (self.mass_left * self.specific_heat_left) # ΔT = Q / (m*c)
+            self.temperature_left += delta_temp #Increase temperature due to absorbed radiation.
+            self.incoming_radiation_left = 0 #Reset incoming radiation after absorption.
+        if self.incoming_radiation_right > 0: #If there is any incoming radiation...
+            delta_temp = self.incoming_radiation_right / (self.mass_right * self.specific_heat_right) # ΔT = Q / (m*c)
+            self.temperature_right += delta_temp #Increase temperature due to absorbed radiation.
+            self.incoming_radiation_right = 0 #Reset incoming radiation after absorption.
+
+    def conduct(self): #Conduct heat between the two sides of the blackbody.
+        delta_temp = self.temperature_right - self.temperature_left #Temperature difference between the two sides.
+        if delta_temp != 0: #If there is a temperature difference...
+            heat_transfer = self.conductivity * self.area * delta_temp / self.width / self.simulation.stepsPerSecond # Q = k*A*ΔT/d, with A=width*1m (1m depth into the screen), d=width
+            delta_temp_left = heat_transfer / (self.mass_left * self.specific_heat_left) # ΔT = Q / (m*c)
+            delta_temp_right = heat_transfer / (self.mass_right * self.specific_heat_right) # ΔT = Q / (m*c)
+            self.temperature_left += delta_temp_left #Increase temperature on the left side.
+            self.temperature_right -= delta_temp_right #Decrease temperature on the right side.
+            if self.temperature_left < 0: #Clamp temperature to 0K. Should never happen, but needed for simulation stability.
+                self.temperature_left = 0
+            if self.temperature_right < 0: #Clamp temperature to 0K. Should never happen, but needed for simulation stability.
+                self.temperature_right = 0
+
 class Void: #A void that does not emit or have a temperature, but can absorb radiation and remove it from the system.:
     
     def __init__(self, simulation): #We need the position of the void, a reference to the simulation object.
@@ -268,7 +369,6 @@ class Simulation: #This is the main class. It contains all the code for running 
             self.maxSteps = maxSteps #Maximum number of steps to run the simulation for.
             self.logfile = logfile #File to log simulation data.
             if self.draw_enabled:
-                import pygame   #Import the pygame library for drawing to the screen.
                 pygame.display.init()   #Initialize the pygame display module.
                 self.screen = pygame.display.set_mode((1500, 400)) #Sets the size of the display in terms of number of pixels. Width, then height.
                 self.clock = pygame.time.Clock() #Starts the gameclock, which sets the speed of the simulation.
@@ -384,10 +484,20 @@ class Simulation: #This is the main class. It contains all the code for running 
         #Blackbody(self)
         #Blackbody(self)
 
-        Mirror(self)
-        TwoSidedBlackbody(self, temperature_left=500, temperature_right=500)
-        TwoSidedBlackbody(self, temperature_left=0, temperature_right=0)
-        Mirror(self)
+        #Mirror(self)
+        #TwoSidedBlackbody(self, temperature_left=500, temperature_right=500)
+        #TwoSidedBlackbody(self, temperature_left=0, temperature_right=0)
+        #Mirror(self)
+
+        TwoConnectedBlackbodies(self, temperature_left=0, temperature_right=0, mass_left=1, mass_right=1, area=1e-7)
+        HeatSource(self, watts=400)
+        Void(self)
+        HeatSource(self, watts=400)
+        Blackbody(self, temperature=0)
+        Blackbody(self, temperature=0)
+
+
+
         
     def calc_energy(self): #A method to calculate the total energy in the system. 
         total_energy = 0 #Start with zero energy.
@@ -428,7 +538,8 @@ class Simulation: #This is the main class. It contains all the code for running 
                 #self.clock.tick(60) #60FPS. This just tells python to wait. The simulation is only allowed to execute this line 60 times per second.
             
 if __name__ == "__main__": #This code only runs if we are running this file directly, and not importing it as a module in another file.
-    simulation = Simulation(draw=False) #First, we make a Simulation object, calling its constructor. We save it to a variable so can access it later.
+    pygame.init() #Initialize all of pygame's modules. This must be done before we can use any pygame functions.
+    simulation = Simulation(logfile='Wire-log.dat') #First, we make a Simulation object, calling its constructor. We save it to a variable so can access it later.
     simulation.create() #We point to our simulation object and tell it to execute its create method. This builds the initial world and sets things up.
     simulation.main() #We point to our simulation object and tell it to execute its main method. This method contains an infinite loop and will continue to run while they are playing.
     if simulation.draw_enabled:
