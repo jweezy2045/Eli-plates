@@ -1,5 +1,3 @@
-import pygame
-
 class Mirror: #A mirror that reflects all radiation. It does not emit or absorb radiation.
     
     def __init__(self, simulation): #We need the position of the mirror, a reference to the simulation object.
@@ -270,7 +268,8 @@ class Simulation: #This is the main class. It contains all the code for running 
             self.maxSteps = maxSteps #Maximum number of steps to run the simulation for.
             self.logfile = logfile #File to log simulation data.
             if self.draw_enabled:
-                pygame.display.init()
+                import pygame   #Import the pygame library for drawing to the screen.
+                pygame.display.init()   #Initialize the pygame display module.
                 self.screen = pygame.display.set_mode((1500, 400)) #Sets the size of the display in terms of number of pixels. Width, then height.
                 self.clock = pygame.time.Clock() #Starts the gameclock, which sets the speed of the simulation.
             self.running = True #A variable we can use a switch to shut the Simulation off if we need to.
@@ -416,6 +415,7 @@ class Simulation: #This is the main class. It contains all the code for running 
             f.write(f"{self.JoulesLostToSpace:.6f}, {self.calc_energy():.6f}\n") #Write the Joules lost to space and total energy in the system to the log file.
 
     def main(self): #The heart of our simulation. This is what the computer is executing while our simulation is running.
+        self.log() #Log initial state to file.
         while self.running: #Infinite loop. We will do these things over and over on repeat until our self.running variable gets set to False.
             self.update() #Update all of the things that move/change
             self.log() #Log simulation data to file.
@@ -431,4 +431,5 @@ if __name__ == "__main__": #This code only runs if we are running this file dire
     simulation = Simulation(draw=False) #First, we make a Simulation object, calling its constructor. We save it to a variable so can access it later.
     simulation.create() #We point to our simulation object and tell it to execute its create method. This builds the initial world and sets things up.
     simulation.main() #We point to our simulation object and tell it to execute its main method. This method contains an infinite loop and will continue to run while they are playing.
-    pygame.quit() #We can only make it to here if the infinite loop from main ended, which means we want to stop the simulation, so we quit.
+    if simulation.draw_enabled:
+        pygame.quit() #We can only make it to here if the infinite loop from main ended, which means we want to stop the simulation, so we quit.
