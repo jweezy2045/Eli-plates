@@ -265,14 +265,19 @@ class Void: #A void that does not emit or have a temperature, but can absorb rad
 
 class Simulation: #This is the main class. It contains all the code for running the simulation.
 
-    def __init__(self): #Constructor for the Simulation object. This code gets run whenever we make a new Simulation object, like: Simulation(). 
-            self.screen = pygame.display.set_mode((1500, 400)) #Sets the size of the display in terms of number of pixels. Width, then height.
-            self.clock = pygame.time.Clock() #Starts the gameclock, which sets the speed of the simulation.
+    def __init__(self, draw=True, logfile='Simulation-log.dat', maxSteps = 1e4): #Constructor for the Simulation object. This code gets run whenever we make a new Simulation object, like: Simulation(). 
+            self.draw_enabled = draw #Whether to draw the simulation to the screen.
+            self.maxSteps = maxSteps #Maximum number of steps to run the simulation for.
+            self.logfile = logfile #File to log simulation data.
+            if self.draw_enabled:
+                pygame.display.init()
+                self.screen = pygame.display.set_mode((1500, 400)) #Sets the size of the display in terms of number of pixels. Width, then height.
+                self.clock = pygame.time.Clock() #Starts the gameclock, which sets the speed of the simulation.
             self.running = True #A variable we can use a switch to shut the Simulation off if we need to.
             self.slots = [] #A list to hold all of our blackbody objects, mirrors, and heat sources. Order of creation determines order of the ojects in space
             self.JoulesLostToSpace = 0 #A variable to keep track of how much energy has been lost to space over the course of the simulation.
             self.prevJoulesLostToSpace = 0 #A variable to keep track of how much energy has been lost to space in the previous mili-second of the simulation.
-            self.stepsPerSecond = 1000000 #How many steps we simulate per second of real time.
+            self.stepsPerSecond = 1000 #How many steps we simulate per second of real time.
 
     def draw(self): #A method Games can do. It draws everything that should be on the screen to the screen, then updates the screen.
             self.screen.fill((0, 0, 0)) #black out the screen. This removes the last drawing we made, so we start with a fresh black canvas.
@@ -394,17 +399,36 @@ class Simulation: #This is the main class. It contains all the code for running 
                 total_energy += object.mass_left * object.specific_heat_left * object.temperature_left #E = m*c*T for the left side.
                 total_energy += object.mass_right * object.specific_heat_right * object.temperature_right #E = m*c*T for the right side.
         return total_energy 
-        
+    
+    def log(self): #Log simulation data to file.
+        with open(self.logfile, 'a') as f: #Open the log file in append mode.
+            for object in self.slots: #For each object in our list of objects...
+                if isinstance(object, Blackbody): #Only blackbodies and heat sources have a single temperature.
+                    f.write(f"BB[{object.temperature:.6f}], ") #Write the temperature of the object to the log file.
+                elif isinstance(object, HeatSource): #Only blackbodies and heat sources have a single temperature.
+                    f.write(f"HS[{object.temperature:.6f}], ") #Write the temperature of the object to the log file.
+                elif isinstance(object, TwoSidedBlackbody): #TwoSidedBlackbodies have two temperatures.
+                    f.write(f"TSBB[{object.temperature_left:.6f}, {object.temperature_right:.6f}], ") #Write the temperatures of the object to the log file.
+                elif isinstance(object, Mirror): #Mirrors do not have a temperature.
+                    f.write("M, ") #Mirrors and Voids do not have a temperature.
+                elif isinstance(object, Void): #Mirrors do not have a temperature.
+                    f.write("V, ") #Mirrors and Voids do not have a temperature.
+            f.write(f"{self.JoulesLostToSpace:.6f}, {self.calc_energy():.6f}\n") #Write the Joules lost to space and total energy in the system to the log file.
+
     def main(self): #The heart of our simulation. This is what the computer is executing while our simulation is running.
         while self.running: #Infinite loop. We will do these things over and over on repeat until our self.running variable gets set to False.
-            self.events() #Check for any new events we need to act on
             self.update() #Update all of the things that move/change
-            self.draw() #Redraw the screen, since things may have moved/changed.
-            #self.clock.tick(60) #60FPS. This just tells python to wait. The simulation is only allowed to execute this line 60 times per second.
+            self.log() #Log simulation data to file.
+            self.maxSteps -= 1 #Decrease the number of steps remaining.
+            if self.maxSteps <= 0: #If we have reached the maximum number of steps...
+                self.running = False #Stop the simulation.
+            if self.draw_enabled:
+                self.events() #Check for any new events we need to act on
+                self.draw() #Redraw the screen, since things may have moved/changed.
+                #self.clock.tick(60) #60FPS. This just tells python to wait. The simulation is only allowed to execute this line 60 times per second.
             
 if __name__ == "__main__": #This code only runs if we are running this file directly, and not importing it as a module in another file.
-    pygame.init()
-    simulation = Simulation() #First, we make a Simulation object, calling its constructor. We save it to a variable so can access it later.
+    simulation = Simulation(draw=False) #First, we make a Simulation object, calling its constructor. We save it to a variable so can access it later.
     simulation.create() #We point to our simulation object and tell it to execute its create method. This builds the initial world and sets things up.
     simulation.main() #We point to our simulation object and tell it to execute its main method. This method contains an infinite loop and will continue to run while they are playing.
     pygame.quit() #We can only make it to here if the infinite loop from main ended, which means we want to stop the simulation, so we quit.
